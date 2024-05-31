@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Doopass.API.Domain.Models;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
-namespace Doopass.API.Domain.Models;
+namespace Doopass.API.Domain;
 
 public class DoopassContext : DbContext
 {

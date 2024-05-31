@@ -2,7 +2,10 @@ using Doopass.API.Domain.DTOs;
 using Doopass.API.Infrastructure;
 using Doopass.API.Infrastructure.Services;
 using Doopass.API.Domain.Models;
+using Doopass.API.Domain;
 using Microsoft.AspNetCore.Mvc;
+using Doopass.API.Infrastructure.Exceptions;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Doopass.API.Controllers;
 
@@ -17,7 +20,8 @@ public class UserController : ControllerBase
         JWTConfig jwtConfig = new(
             issuer: configuration["JwtSettings:Issuer"]!,
             audience: configuration["Audience"]!,
-            lifeTime: double.Parse(configuration["JwtSettings:LifeTime"]!),
+            accessLifetime: double.Parse(configuration["JwtSettings:AccessLifetime"]!),
+            refreshLifetime: double.Parse(configuration["JwtSettings:RefreshLifetime"]!),
             secretKeyVariableName: configuration["JwtSettings:KeyEnvVariable"]!
         );
         _userService = new UserService(dbContext, jwtConfig);
@@ -27,8 +31,14 @@ public class UserController : ControllerBase
     [Route("auth/register")]
     public async Task<ActionResult<User>> Create(UserDTO userDTO)
     {
-        User user = await _userService.Register(userDTO);
-        return Ok(user);
+        try
+        {
+            User user = await _userService.Register(userDTO);
+            return Ok(user);
+        } catch (InfrastructureBaseException exc)
+        {
+            return BadRequest(exc.Message);
+        }
     }
 
     [HttpPost]
@@ -43,12 +53,34 @@ public class UserController : ControllerBase
         if (!new PasswordHasher().Verify(dto.Password, user.Password))
             return BadRequest("Invalid password");
 
-        string token = await _userService.Login(dto);
+        JWTPair pair = await _userService.Login(dto);
         JWTTokenDTO tokenDTO = new() {
-            AccessToken = token,
-            UserName = dto.UserName
+            AccessToken = pair.AccessToken,
+            RefreshToken = pair.RefreshToken
         };
 
         return Ok(tokenDTO);
+    }
+
+    [HttpGet]
+    [Authorize]
+    [Route("auth/refresh")]
+    public async Task<ActionResult<JWTTokenDTO>> Refresh()
+    {
+        var username = User.Identity!.Name;
+        JWTPair pair = await _userService.Refresh(username!);
+        JWTTokenDTO tokenDTO = new() {
+            AccessToken = pair.AccessToken,
+            RefreshToken = pair.RefreshToken
+        };
+
+        return Ok(tokenDTO);
+    }
+
+    [HttpGet]
+    [Route("list")]
+    public async Task<ActionResult<List<User>>> GetUsers()
+    {
+        return Ok(await _userService.GetUsers());
     }
 }

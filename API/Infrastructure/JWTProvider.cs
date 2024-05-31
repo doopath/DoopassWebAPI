@@ -19,24 +19,24 @@ public class JWTProvider
         _userService = userService;
     }
 
-    public async Task<string> Generate(string username)
+    public async Task<JWTPair> Generate(string username)
     {
-        var identity = await GetIdentity(username);
         var now = DateTime.UtcNow;
-        var jwt = new JwtSecurityToken(
-            issuer: _config.Issuer,
-            audience: _config.Audience,
-            notBefore: now,
-            claims: identity.Claims,
-            expires: now.Add(TimeSpan.FromMinutes(_config.LifeTime)),
-            signingCredentials: new(
-                GetSymmetricSecurityKey(),
-                SecurityAlgorithms.HmacSha256
-            )
-        );
-        var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
+        var identity = await GetIdentity(username);
 
-        return encodedJwt;
+        var accessExpires = now.AddMinutes(_config.AccessLifetime);
+        var refreshExpires = now.AddMinutes(_config.RefreshLifetime);
+
+        var accessToken = GenerateToken(identity, accessExpires);
+        var refreshToken = GenerateToken(identity, refreshExpires);
+
+        var encodeAccessToken = new JwtSecurityTokenHandler().WriteToken(accessToken);
+        var encodeRefreshToken = new JwtSecurityTokenHandler().WriteToken(refreshToken);
+
+        return new() {
+            AccessToken = encodeAccessToken,
+            RefreshToken = encodeRefreshToken
+        };
     }
 
     private async Task<ClaimsIdentity> GetIdentity(string username)
@@ -63,5 +63,22 @@ public class JWTProvider
     private SymmetricSecurityKey GetSymmetricSecurityKey()
     {
         return new(Encoding.UTF8.GetBytes(_config.SecretKey));
+    }
+
+    private JwtSecurityToken GenerateToken(ClaimsIdentity identity, DateTime expires)
+    {
+        var now = DateTime.UtcNow;
+
+        return new JwtSecurityToken(
+            issuer: _config.Issuer,
+            audience: _config.Audience,
+            notBefore: now,
+            claims: identity.Claims,
+            expires: expires,
+            signingCredentials: new(
+                GetSymmetricSecurityKey(),
+                SecurityAlgorithms.HmacSha256
+            )
+        );
     }
 }

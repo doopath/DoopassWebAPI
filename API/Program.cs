@@ -1,6 +1,5 @@
 using System.Text;
-using Doopass.API.Infrastructure;
-using Doopass.API.Domain.Models;
+using Doopass.API.Domain;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -8,7 +7,6 @@ using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
 var dbOptions = new DBOptions();
-
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -22,12 +20,12 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(
                     Environment.GetEnvironmentVariable(
-                        "DOOPASS_JWT_SECRET_KEY"
+                        config["JwtSettings:KeyEnvVariable"]!
                     )!
                 )
             ),
+            ValidateAudience = false,
             ValidateIssuer = true,
-            ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true
         };

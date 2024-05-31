@@ -1,7 +1,6 @@
-namespace Doopass.API.Domain.DTOs;
+namespace Doopass.API.Infrastructure;
 
-public record JWTTokenDTO
-{
+public record JWTPair {
     public required string AccessToken { get; init; }
     public required string RefreshToken { get; init; }
 }

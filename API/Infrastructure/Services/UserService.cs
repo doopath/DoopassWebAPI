@@ -1,5 +1,7 @@
+using Doopass.API.Domain;
 using Doopass.API.Domain.DTOs;
 using Doopass.API.Domain.Models;
+using Doopass.API.Infrastructure.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Doopass.API.Infrastructure.Services;
@@ -48,6 +50,9 @@ public class UserService : IUserService
 
     public async Task<User> Register(UserDTO userDTO)
     {
+        if (_dbContext.Users.AsParallel().FirstOrDefault(u => u.UserName == userDTO.UserName) is not null)
+            throw new NotUniqueUserNameException($"Use with username={userDTO.UserName} already registered");
+
         User user = new() {
             UserName = userDTO.UserName!,
             Password = new PasswordHasher().Generate(userDTO.Password!),
@@ -60,8 +65,13 @@ public class UserService : IUserService
         return user;
     }
 
-    public async Task<string> Login(UserLoginRequestDTO data)
+    public async Task<JWTPair> Login(UserLoginRequestDTO data)
     {
         return await _jwtProvider.Generate(data.UserName);
+    }
+
+    public async Task<JWTPair> Refresh(string username)
+    {
+        return await _jwtProvider.Generate(username);
     }
 }

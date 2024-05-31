@@ -1,4 +1,4 @@
-namespace Doopass.API.Domain.Models;
+namespace Doopass.API.Domain;
 
 public class DBOptions
 {
