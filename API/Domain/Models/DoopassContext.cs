@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace Doopass.API.Models;
+namespace Doopass.API.Domain.Models;
 
 public class DoopassContext : DbContext
 {

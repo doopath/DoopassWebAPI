@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Doopass.API.DTOs;
+namespace Doopass.API.Domain.DTOs;
 
-public class UserDTO
+public record UserDTO
 {
     [MaxLength(255)]
     public string? UserName { get; set; }

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Doopass.API.Models;
+namespace Doopass.API.Domain.Models;
 
 public class User
 {
