@@ -6,26 +6,17 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Doopass.API.Infrastructure;
 
-public class JWTProvider
+public class JWTProvider(JWTConfig config, IPasswordHasher passwordHasher, IUserService userService)
 {
-    private readonly JWTConfig _config;
-    private readonly IPasswordHasher _passwordHasher;
-    private readonly IUserService _userService;
-
-    public JWTProvider(JWTConfig config, IPasswordHasher passwordHasher, IUserService userService)
-    {
-        _config = config;
-        _passwordHasher = passwordHasher;
-        _userService = userService;
-    }
+    private readonly IPasswordHasher _passwordHasher = passwordHasher;
 
     public async Task<JWTPair> Generate(string username)
     {
         var now = DateTime.UtcNow;
         var identity = await GetIdentity(username);
 
-        var accessExpires = now.AddMinutes(_config.AccessLifetime);
-        var refreshExpires = now.AddMinutes(_config.RefreshLifetime);
+        var accessExpires = now.AddMinutes(config.AccessLifetime);
+        var refreshExpires = now.AddMinutes(config.RefreshLifetime);
 
         var accessToken = GenerateToken(identity, accessExpires);
         var refreshToken = GenerateToken(identity, refreshExpires);
@@ -33,7 +24,8 @@ public class JWTProvider
         var encodeAccessToken = new JwtSecurityTokenHandler().WriteToken(accessToken);
         var encodeRefreshToken = new JwtSecurityTokenHandler().WriteToken(refreshToken);
 
-        return new() {
+        return new JWTPair
+        {
             AccessToken = encodeAccessToken,
             RefreshToken = encodeRefreshToken
         };
@@ -41,8 +33,8 @@ public class JWTProvider
 
     private async Task<ClaimsIdentity> GetIdentity(string username)
     {
-        List<User> users = await _userService.GetUsers();
-        User user = users.AsParallel().First(u => u.UserName == username);
+        List<User> users = await userService.GetUsers();
+        var user = users.AsParallel().First(u => u.UserName == username);
         var claims = new List<Claim>
         {
             new(ClaimsIdentity.DefaultNameClaimType, user.UserName),
@@ -62,7 +54,7 @@ public class JWTProvider
 
     private SymmetricSecurityKey GetSymmetricSecurityKey()
     {
-        return new(Encoding.UTF8.GetBytes(_config.SecretKey));
+        return new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config.SecretKey));
     }
 
     private JwtSecurityToken GenerateToken(ClaimsIdentity identity, DateTime expires)
@@ -70,12 +62,12 @@ public class JWTProvider
         var now = DateTime.UtcNow;
 
         return new JwtSecurityToken(
-            issuer: _config.Issuer,
-            audience: _config.Audience,
+            config.Issuer,
+            config.Audience,
             notBefore: now,
             claims: identity.Claims,
             expires: expires,
-            signingCredentials: new(
+            signingCredentials: new SigningCredentials(
                 GetSymmetricSecurityKey(),
                 SecurityAlgorithms.HmacSha256
             )

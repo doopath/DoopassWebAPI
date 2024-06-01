@@ -6,8 +6,7 @@ public class Storage
 {
     public int Id { get; set; }
 
-    [MaxLength(255)]
-    public required string Name { get; set; }
+    [MaxLength(255)] public required string Name { get; set; }
 
     public required string Content { get; set; }
 

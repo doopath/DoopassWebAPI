@@ -29,7 +29,7 @@ public class UserService : IUserService
 
     public async Task<User> UpdateUser(UserDTO userDTO)
     {
-        User user = await _dbContext.Users.FirstAsync(user => user.UserName == userDTO.UserName);
+        var user = await _dbContext.Users.FirstAsync(user => user.UserName == userDTO.UserName);
         user.UserName = userDTO.UserName ?? user.UserName;
         user.Email = userDTO.Email ?? user.Email;
 
@@ -43,7 +43,7 @@ public class UserService : IUserService
 
     public async void DeleteUser(string username)
     {
-        User user = await _dbContext.Users.FirstAsync(user => user.UserName == username);
+        var user = await _dbContext.Users.FirstAsync(user => user.UserName == username);
         _dbContext.Users.Remove(user);
         await _dbContext.SaveChangesAsync();
     }
@@ -53,10 +53,11 @@ public class UserService : IUserService
         if (_dbContext.Users.AsParallel().FirstOrDefault(u => u.UserName == userDTO.UserName) is not null)
             throw new NotUniqueUserNameException($"Use with username={userDTO.UserName} already registered");
 
-        User user = new() {
+        User user = new()
+        {
             UserName = userDTO.UserName!,
             Password = new PasswordHasher().Generate(userDTO.Password!),
-            Email = userDTO.Email!,
+            Email = userDTO.Email!
         };
 
         await _dbContext.Users.AddAsync(user);

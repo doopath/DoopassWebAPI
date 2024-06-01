@@ -18,11 +18,11 @@ public class UserController : ControllerBase
     public UserController(DoopassContext dbContext, IConfiguration configuration)
     {
         JWTConfig jwtConfig = new(
-            issuer: configuration["JwtSettings:Issuer"]!,
-            audience: configuration["Audience"]!,
-            accessLifetime: double.Parse(configuration["JwtSettings:AccessLifetime"]!),
-            refreshLifetime: double.Parse(configuration["JwtSettings:RefreshLifetime"]!),
-            secretKeyVariableName: configuration["JwtSettings:KeyEnvVariable"]!
+            configuration["JwtSettings:Issuer"]!,
+            configuration["Audience"]!,
+            double.Parse(configuration["JwtSettings:AccessLifetime"]!),
+            double.Parse(configuration["JwtSettings:RefreshLifetime"]!),
+            configuration["JwtSettings:KeyEnvVariable"]!
         );
         _userService = new UserService(dbContext, jwtConfig);
     }
@@ -33,9 +33,10 @@ public class UserController : ControllerBase
     {
         try
         {
-            User user = await _userService.Register(userDTO);
+            var user = await _userService.Register(userDTO);
             return Ok(user);
-        } catch (InfrastructureBaseException exc)
+        }
+        catch (InfrastructureBaseException exc)
         {
             return BadRequest(exc.Message);
         }
@@ -45,7 +46,7 @@ public class UserController : ControllerBase
     [Route("auth/login")]
     public async Task<ActionResult<JWTTokenDTO>> Login(UserLoginRequestDTO dto)
     {
-        User? user = await _userService.GetUser(dto.UserName);
+        var user = await _userService.GetUser(dto.UserName);
 
         if (user is null)
             return BadRequest($"User with username={dto.UserName} was not found");
@@ -53,8 +54,9 @@ public class UserController : ControllerBase
         if (!new PasswordHasher().Verify(dto.Password, user.Password))
             return BadRequest("Invalid password");
 
-        JWTPair pair = await _userService.Login(dto);
-        JWTTokenDTO tokenDTO = new() {
+        var pair = await _userService.Login(dto);
+        JWTTokenDTO tokenDTO = new()
+        {
             AccessToken = pair.AccessToken,
             RefreshToken = pair.RefreshToken
         };
@@ -68,8 +70,9 @@ public class UserController : ControllerBase
     public async Task<ActionResult<JWTTokenDTO>> Refresh()
     {
         var username = User.Identity!.Name;
-        JWTPair pair = await _userService.Refresh(username!);
-        JWTTokenDTO tokenDTO = new() {
+        var pair = await _userService.Refresh(username!);
+        JWTTokenDTO tokenDTO = new()
+        {
             AccessToken = pair.AccessToken,
             RefreshToken = pair.RefreshToken
         };
