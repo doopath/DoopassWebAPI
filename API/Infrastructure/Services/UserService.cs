@@ -29,30 +29,46 @@ public class UserService : IUserService
 
     public async Task<User> UpdateUser(UserDTO userDTO)
     {
-        var user = await _dbContext.Users.FirstAsync(user => user.UserName == userDTO.UserName);
-        user.UserName = userDTO.UserName ?? user.UserName;
+        var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.UserName == userDTO.UserName);
+        
+        if (user is null)
+            throw new EntityNotFoundException($"User with username={userDTO.UserName} was not found");
+        
         user.Email = userDTO.Email ?? user.Email;
 
         if (userDTO.Password is not null)
+        {
+            if (new PasswordValidator(userDTO.Password).Validate() is false)
+                throw new InvalidPasswordException(
+                    "Password must be at least 8 symbols and contain one digit and one special character!");
             user.Password = new PasswordHasher().Generate(userDTO.Password);
-
+        }
+        
         await _dbContext.SaveChangesAsync();
 
         return user;
     }
 
-    public async void DeleteUser(string username)
+    public async Task DeleteUser(string username)
     {
-        var user = await _dbContext.Users.FirstAsync(user => user.UserName == username);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(user => user.UserName == username);
+        
+        if (user is null)
+            throw new EntityNotFoundException($"User with username={username} was not found");
+        
         _dbContext.Users.Remove(user);
         await _dbContext.SaveChangesAsync();
     }
 
     public async Task<User> Register(UserDTO userDTO)
     {
-        if (_dbContext.Users.AsParallel().FirstOrDefault(u => u.UserName == userDTO.UserName) is not null)
+        if (IsUserRegistered(userDTO.UserName!))
             throw new NotUniqueUserNameException($"Use with username={userDTO.UserName} already registered");
 
+        if (new PasswordValidator(userDTO.Password!).Validate() is false)
+            throw new InvalidPasswordException(
+                "Password must be at least 8 symbols and contain one digit and one special character!");
+        
         User user = new()
         {
             UserName = userDTO.UserName!,
@@ -74,5 +90,10 @@ public class UserService : IUserService
     public async Task<JWTPair> Refresh(string username)
     {
         return await _jwtProvider.Generate(username);
+    }
+
+    public bool IsUserRegistered(string username)
+    {
+        return _dbContext.Users.AsParallel().FirstOrDefault(u => u.UserName == username) is not null;
     }
 }

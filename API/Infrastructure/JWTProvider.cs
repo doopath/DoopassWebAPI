@@ -38,8 +38,6 @@ public class JWTProvider(JWTConfig config, IPasswordHasher passwordHasher, IUser
         var claims = new List<Claim>
         {
             new(ClaimsIdentity.DefaultNameClaimType, user.UserName),
-            new(ClaimsIdentity.DefaultRoleClaimType, user.Email),
-            new(ClaimsIdentity.DefaultRoleClaimType, user.Password)
         };
 
         ClaimsIdentity claimsIdentity = new(

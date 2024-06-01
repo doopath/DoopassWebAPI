@@ -13,7 +13,7 @@ namespace Doopass.API.Controllers;
 [Route("api/[controller]")]
 public class UserController : ControllerBase
 {
-    protected readonly IUserService _userService;
+    private readonly IUserService _userService;
 
     public UserController(DoopassContext dbContext, IConfiguration configuration)
     {
@@ -29,12 +29,12 @@ public class UserController : ControllerBase
 
     [HttpPost]
     [Route("auth/register")]
-    public async Task<ActionResult<User>> Create(UserDTO userDTO)
+    public async Task<ActionResult<UserDTO>> Create(UserDTO userDTO)
     {
         try
         {
             var user = await _userService.Register(userDTO);
-            return Ok(user);
+            return Ok(user.ToDTO());
         }
         catch (InfrastructureBaseException exc)
         {
@@ -85,5 +85,51 @@ public class UserController : ControllerBase
     public async Task<ActionResult<List<User>>> GetUsers()
     {
         return Ok(await _userService.GetUsers());
+    }
+
+    [Authorize]
+    [HttpGet]
+    [Route("{username}")]
+    public async Task<ActionResult<UserDTO>> GetUser(string username)
+    {
+        var user = await _userService.GetUser(username);
+
+        if (user is null)
+            return NotFound($"User with username={username} was not found");
+
+        return Ok(user.ToDTO());
+    }
+
+    [Authorize]
+    [HttpPut]
+    [Route("update")]
+    public async Task<ActionResult<UserDTO>> UpdateUser(UserDTO userDTO)
+    {
+        try
+        {
+            var user = await _userService.UpdateUser(userDTO);
+            return Ok(user.ToDTO());
+        }
+        catch (EntityNotFoundException exc)
+        {
+            return NotFound(exc.Message);
+        }
+    }
+
+    [Authorize]
+    [HttpDelete]
+    [Route("delete/{username}")]
+    public async Task<ActionResult> DeleteUser(string username)
+    {
+        try
+        {
+            await _userService.DeleteUser(username);
+        }
+        catch (EntityNotFoundException exc)
+        {
+            return NotFound(exc.Message);
+        }
+
+        return Ok();
     }
 }
