@@ -8,8 +8,8 @@ namespace Doopass.API.Infrastructure.Services;
 
 public class UserService : IUserService
 {
-    protected DoopassContext _dbContext;
-    protected JWTProvider _jwtProvider;
+    private readonly DoopassContext _dbContext;
+    private readonly JWTProvider _jwtProvider;
 
     public UserService(DoopassContext dbContext, JWTConfig jwtConfig)
     {

@@ -82,9 +82,12 @@ public class UserController : ControllerBase
 
     [HttpGet]
     [Route("list")]
-    public async Task<ActionResult<List<User>>> GetUsers()
+    public async Task<ActionResult<List<UserDTO>>> GetUsers()
     {
-        return Ok(await _userService.GetUsers());
+        var users = await _userService.GetUsers();
+        var DTOs = users.AsParallel().Select(u => u.ToDTO()).ToList();
+        
+        return Ok(DTOs);
     }
 
     [Authorize]
@@ -95,7 +98,7 @@ public class UserController : ControllerBase
         var user = await _userService.GetUser(username);
 
         if (user is null)
-            return NotFound($"User with username={username} was not found");
+            return BadRequest($"User with username={username} was not found");
 
         return Ok(user.ToDTO());
     }
@@ -112,7 +115,7 @@ public class UserController : ControllerBase
         }
         catch (EntityNotFoundException exc)
         {
-            return NotFound(exc.Message);
+            return BadRequest(exc.Message);
         }
     }
 
@@ -127,7 +130,7 @@ public class UserController : ControllerBase
         }
         catch (EntityNotFoundException exc)
         {
-            return NotFound(exc.Message);
+            return BadRequest(exc.Message);
         }
 
         return Ok();

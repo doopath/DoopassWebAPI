@@ -37,7 +37,8 @@ public class JWTProvider(JWTConfig config, IPasswordHasher passwordHasher, IUser
         var user = users.AsParallel().First(u => u.UserName == username);
         var claims = new List<Claim>
         {
-            new(ClaimsIdentity.DefaultNameClaimType, user.UserName),
+            new(ClaimTypes.Name, user.UserName),
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
         };
 
         ClaimsIdentity claimsIdentity = new(

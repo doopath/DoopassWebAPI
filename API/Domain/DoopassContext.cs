@@ -4,14 +4,9 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Doopass.API.Domain;
 
-public class DoopassContext : DbContext
+public class DoopassContext(DbContextOptions<DoopassContext> options) : DbContext(options)
 {
-    public DoopassContext(DbContextOptions<DoopassContext> options)
-        : base(options)
-    {
-    }
-
-    public DbSet<User> Users { get; set; }
-    public DbSet<Storage> Storages { get; set; }
-    public DbSet<Backup> Backups { get; set; }
+    public DbSet<User> Users { get; init; }
+    public DbSet<Storage> Storages { get; init; }
+    public DbSet<Backup> Backups { get; init; }
 }
