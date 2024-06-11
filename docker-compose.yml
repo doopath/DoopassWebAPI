@@ -1,0 +1,53 @@
+version: '3.9'
+
+services:
+  auth:
+    image: auth
+    build:
+      context: .
+      dockerfile: Auth/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=5000
+    ports:
+      - "5000:5000"
+    networks:
+      - local
+    depends_on:
+      - auth_db
+      - redis
+  
+  auth_db:
+    image: postgres:latest
+    container_name: auth_db
+    environment:
+      POSTGRES_DB: "auth"
+      POSTGRES_USER: "doopass"
+      POSTGRES_PASSWORD: "doopass"
+      PGDATA: "/var/lib/pgsql/data/pgdata"
+    volumes:
+      - auth_db_data:/var/lib/pgsql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - local
+
+  redis:
+    image: redis:latest
+    container_name: doopass_distributed_cache
+    command: >
+      --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - local
+
+volumes:
+  redis_data:
+  auth_db_data:
+    
+networks:
+  local:
+    driver: bridge

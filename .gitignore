@@ -1,6 +1,13 @@
+# Build dirs
 */obj/
 */bin/
-out/
+
+# Runable projects properties dirs
+./*/Properties/
+
+# Redis
+dump.rdb
+
+# IDEs settings dirs
 .vscode/
 .idea/
-./API/Properties/
